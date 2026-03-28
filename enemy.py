@@ -87,12 +87,10 @@ class Enemy:
         self._try_pick_up_gold(level)
         self._update_anim(dt)
 
-    def _die(self, level: "Level | None" = None) -> None:
+    def _die(self, level: "Level") -> None:
         """Kill this enemy. Drops gold at current position if carrying."""
-        if self.has_gold and level is not None:
+        if self.has_gold:
             level.set_tile(self.col, self.row, C.GOLD)
-            self.has_gold = False
-        elif self.has_gold:
             self.has_gold = False
         self.state = EnemyState.DEAD
         self._respawn_timer = 0.0
@@ -184,7 +182,7 @@ class Enemy:
         """Manage trapped state: escape timer or die if hole closes."""
         # Check if hole has closed (tile reverted to DIGGABLE_BRICK)
         tile_here = level.get_tile(self.col, self.row)
-        if tile_here == C.DIGGABLE_BRICK:
+        if tile_here in (C.HOLE_FILLING, C.DIGGABLE_BRICK):
             self._die(level)
             return
 
@@ -198,7 +196,7 @@ class Enemy:
     def _handle_dead(self, dt: float, level: "Level") -> None:
         """Wait for respawn timer, then respawn at top of spawn column."""
         self._respawn_timer += dt
-        if self._respawn_timer >= C.HOLE_FILL_DURATION:  # 2-second-ish respawn delay
+        if self._respawn_timer >= C.ENEMY_RESPAWN_DELAY:
             self.x = float(self._spawn_col * C.TILE_SIZE)
             self.y = 0.0  # row 0 — will fall from top
             self.state = EnemyState.FALLING
@@ -323,6 +321,6 @@ class Enemy:
 
     def _update_anim(self, dt: float) -> None:
         self._anim_timer += dt
-        if self._anim_timer >= 1.0 / C.PLAYER_ANIM_FPS:
-            self._anim_timer -= 1.0 / C.PLAYER_ANIM_FPS
-            self.anim_frame = (self.anim_frame + 1) % C.PLAYER_ANIM_FRAMES
+        if self._anim_timer >= 1.0 / C.ENEMY_ANIM_FPS:
+            self._anim_timer -= 1.0 / C.ENEMY_ANIM_FPS
+            self.anim_frame = (self.anim_frame + 1) % C.ENEMY_ANIM_FRAMES

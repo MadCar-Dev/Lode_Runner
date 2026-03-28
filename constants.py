@@ -64,6 +64,7 @@ COLOR_HUD_TEXT_DIM = (106, 96, 64)
 HOLE_OPEN_DURATION = 7.0  # seconds before hole starts filling
 HOLE_FILL_DURATION = 3.0  # seconds for fill animation (total life = 10s)
 ENEMY_ESCAPE_TIME = 2.5  # seconds before trapped enemy climbs out
+ENEMY_RESPAWN_DELAY = 3.0  # seconds after death before enemy respawns at spawn point
 
 # ---------------------------------------------------------------------------
 # Movement speeds (tiles per second)
@@ -140,3 +141,5 @@ TILE_SNAP_TOLERANCE = 2  # pixels; max y/x offset to count as tile-aligned
 PLAYER_ANIM_FPS = 8  # animation frame flips per second
 PLAYER_ANIM_FRAMES = 8  # total animation frames per cycle
 PLAYER_MOVE_THRESHOLD = 0.001  # min pixel delta to count as moved (sub-pixel guard)
+ENEMY_ANIM_FPS = 8  # animation frame flips per second
+ENEMY_ANIM_FRAMES = 8  # total animation frames per cycle
