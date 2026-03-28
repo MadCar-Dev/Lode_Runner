@@ -72,6 +72,7 @@ class GameState:
             if self.lives <= 0:
                 self.lives = 0
                 self.phase = GamePhase.GAME_OVER
+                self._phase_timer = 0.0
             else:
                 self._load_level()
                 self.phase = GamePhase.PLAYING

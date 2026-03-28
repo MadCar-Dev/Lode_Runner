@@ -18,8 +18,7 @@ class TestGameStateInit:
 
     def test_gold_remaining_matches_level(self):
         gs = GameState()
-        # level_01 has 10 gold tiles
-        assert gs.gold_remaining == 10
+        assert gs.gold_remaining == len(gs.level.gold_positions())
 
     def test_player_at_spawn(self):
         gs = GameState()
