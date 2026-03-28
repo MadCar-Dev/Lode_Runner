@@ -84,17 +84,23 @@ levels/              # Level data files
 
 ### Assigned Agents
 
-| Role Slot | Definition |
-|-----------|------------|
-| `orchestrator_pm` | Lead Orchestrator / PM |
-| `game_designer` | Game Designer |
-| `python_developer` | Python Developer |
-| `gui_expert` | GUI Expert |
-| `testing_expert` | Testing Expert |
-| `code_reviewer` | Code Reviewer |
-| `devops_engineer` | DevOps Engineer |
-| `optimization_engineer` | Optimization Engineer |
-| `technical_writer` | Technical Writer |
+| Role Slot | Definition | When to Use |
+|-----------|------------|-------------|
+| `orchestrator_pm` | Lead Orchestrator / PM | SDLC pipeline manager — dispatches, validates, routes. Never produces artifacts. |
+| `sprint_planner` | Sprint Planner | Produces dependency-classified task waves from design docs. Dispatch BEFORE implementation. |
+| `solutions_architect` | Solutions Architect | Defines module interfaces, data flow, technical decisions. Dispatch BEFORE sprint planning. |
+| `game_designer` | Game Designer | Mechanics design, balance tuning, feature specs. Research + design phases. |
+| `ux_designer` | UX Designer | Controls tuning, game feel, feedback systems, UI flow. Design + post-sprint review. |
+| `python_developer` | Python Developer | All implementation code. TDD: tests first, then implementation. |
+| `gui_expert` | GUI Expert | Rendering, visual design, Pygame surfaces, HUD layout. |
+| `testing_expert` | Testing Expert | Unit tests and TDD test suites. NOT spec compliance (that's qa_engineer). |
+| `qa_engineer` | QA Engineer | Integration testing, spec compliance, acceptance testing. Post-implementation. |
+| `code_reviewer` | Code Reviewer | Code quality gate. Reviews git diffs, not entire files. One review per sprint. |
+| `level_designer` | Level Designer | Tile layouts, enemy placement, gold distribution, difficulty curves. |
+| `sound_designer` | Sound Designer | Procedural audio — all sounds synthesized via numpy, no audio files. |
+| `code_optimizer` | Code Optimizer | Refactoring for readability/DRY/simplicity without changing behavior. |
+| `devops_engineer` | DevOps Engineer | CI/CD, deployment, builds, release management. |
+| `technical_writer` | Technical Writer | READMEs, specs, design docs, architecture decision records. |
 
 ### Agent Lifecycle
 
