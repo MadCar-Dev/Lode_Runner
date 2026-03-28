@@ -1,0 +1,23 @@
+[project]
+name = "lode-runner"
+version = "0.1.0"
+description = "Recreation and modernization of the classic 1983 Lode Runner game"
+requires-python = ">=3.12"
+dependencies = [
+    "pygame-ce>=2.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
