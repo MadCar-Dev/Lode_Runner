@@ -87,7 +87,7 @@ class Enemy:
         self._try_pick_up_gold(level)
         self._update_anim(dt)
 
-    def _die(self, level: "Level") -> None:
+    def die(self, level: "Level") -> None:
         """Kill this enemy. Drops gold at current position if carrying."""
         if self.has_gold:
             level.set_tile(self.col, self.row, C.GOLD)
@@ -183,7 +183,7 @@ class Enemy:
         # Check if hole has closed (tile reverted to DIGGABLE_BRICK)
         tile_here = level.get_tile(self.col, self.row)
         if tile_here in (C.HOLE_FILLING, C.DIGGABLE_BRICK):
-            self._die(level)
+            self.die(level)
             return
 
         self._trap_timer += dt

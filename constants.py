@@ -19,7 +19,9 @@ HOLE_FILLING = 9
 # Tile sets for fast membership tests
 SOLID_TILES = frozenset({SOLID_BRICK, DIGGABLE_BRICK})
 STANDABLE_TILES = frozenset({SOLID_BRICK, DIGGABLE_BRICK})  # entities stand on top of these
-PASSABLE_TILES = frozenset({EMPTY, LADDER, ROPE, GOLD, HIDDEN_LADDER, HOLE_OPEN, FALSE_BRICK})
+PASSABLE_TILES = frozenset(
+    {EMPTY, LADDER, ROPE, GOLD, HIDDEN_LADDER, HOLE_OPEN, HOLE_FILLING, FALSE_BRICK}
+)
 CLIMBABLE_TILES = frozenset({LADDER})
 
 # ---------------------------------------------------------------------------

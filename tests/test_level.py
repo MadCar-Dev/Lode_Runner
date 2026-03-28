@@ -10,9 +10,8 @@ import constants as C
 
 MINIMAL_LEVEL_DATA = {
     "level": 1,
-    "grid": [
-        [C.EMPTY] * C.GRID_COLS for _ in range(C.GRID_ROWS - 1)
-    ] + [[C.SOLID_BRICK] * C.GRID_COLS],  # solid bottom row
+    "grid": [[C.EMPTY] * C.GRID_COLS for _ in range(C.GRID_ROWS - 1)]
+    + [[C.SOLID_BRICK] * C.GRID_COLS],  # solid bottom row
     "player_spawn": {"col": 1, "row": 14},
     "enemy_spawns": [{"col": 26, "row": 0}],
     "escape_ladder_cols": [13],
@@ -38,7 +37,7 @@ _full_grid[0][6] = C.HIDDEN_LADDER
 _full_grid[0][7] = C.FALSE_BRICK
 _full_grid[0][8] = C.HOLE_OPEN
 _full_grid[0][9] = C.HOLE_FILLING
-_full_grid[1][0] = C.GOLD   # second gold for multi-gold tests
+_full_grid[1][0] = C.GOLD  # second gold for multi-gold tests
 _full_grid[1][6] = C.HIDDEN_LADDER  # second hidden ladder tile (same col as [0][6])
 FULL_TILE_DATA["grid"] = _full_grid
 FULL_TILE_DATA["escape_ladder_cols"] = [6]
@@ -47,18 +46,21 @@ FULL_TILE_DATA["escape_ladder_cols"] = [6]
 @pytest.fixture
 def minimal_level():
     from level import Level
+
     return Level(MINIMAL_LEVEL_DATA)
 
 
 @pytest.fixture
 def full_tile_level():
     from level import Level
+
     return Level(FULL_TILE_DATA)
 
 
 # ---------------------------------------------------------------------------
 # Construction and loading
 # ---------------------------------------------------------------------------
+
 
 class TestLevelConstruction:
     def test_level_number(self, minimal_level):
@@ -83,6 +85,7 @@ class TestLevelConstruction:
 
     def test_from_file_round_trip(self, tmp_path, minimal_level):
         from level import Level
+
         path = tmp_path / "test_level.json"
         minimal_level.to_file(path)
         loaded = Level.from_file(path)
@@ -93,6 +96,7 @@ class TestLevelConstruction:
 
     def test_construction_does_not_mutate_input(self):
         from level import Level
+
         data = {
             "level": 1,
             "grid": [[C.EMPTY] * C.GRID_COLS for _ in range(C.GRID_ROWS)],
@@ -109,6 +113,7 @@ class TestLevelConstruction:
 # ---------------------------------------------------------------------------
 # get_tile
 # ---------------------------------------------------------------------------
+
 
 class TestGetTile:
     def test_get_tile_empty(self, full_tile_level):
@@ -158,6 +163,7 @@ class TestGetTile:
 # set_tile
 # ---------------------------------------------------------------------------
 
+
 class TestSetTile:
     def test_set_tile_basic(self, minimal_level):
         minimal_level.set_tile(5, 5, C.GOLD)
@@ -178,6 +184,7 @@ class TestSetTile:
 # ---------------------------------------------------------------------------
 # Tile property predicates
 # ---------------------------------------------------------------------------
+
 
 class TestTilePredicates:
     def test_is_solid_diggable_brick(self, full_tile_level):
@@ -245,7 +252,7 @@ class TestTilePredicates:
         assert full_tile_level.is_passable(7, 0) is True
 
     def test_is_passable_hole_filling(self, full_tile_level):
-        assert full_tile_level.is_passable(9, 0) is False
+        assert full_tile_level.is_passable(9, 0) is True
 
     def test_is_passable_hidden_ladder(self, full_tile_level):
         assert full_tile_level.is_passable(6, 0) is True
@@ -254,6 +261,7 @@ class TestTilePredicates:
 # ---------------------------------------------------------------------------
 # Gold tracking
 # ---------------------------------------------------------------------------
+
 
 class TestGoldPositions:
     def test_gold_positions_returns_all_gold(self, full_tile_level):
@@ -278,6 +286,7 @@ class TestGoldPositions:
 # Escape ladder
 # ---------------------------------------------------------------------------
 
+
 class TestEscapeLadder:
     def test_hidden_ladder_not_visible_before_reveal(self, full_tile_level):
         assert full_tile_level.get_tile(6, 0) == C.HIDDEN_LADDER
@@ -296,3 +305,20 @@ class TestEscapeLadder:
         full_tile_level.reveal_escape_ladder()
         full_tile_level.reveal_escape_ladder()  # calling twice is safe
         assert full_tile_level.get_tile(6, 0) == C.LADDER
+
+
+def test_hole_filling_is_passable():
+    from level import Level
+
+    grid = [[C.EMPTY] * C.GRID_COLS for _ in range(C.GRID_ROWS)]
+    grid[5][10] = C.HOLE_FILLING
+    level = Level(
+        {
+            "level": 1,
+            "grid": grid,
+            "player_spawn": {"col": 0, "row": 0},
+            "enemy_spawns": [],
+            "escape_ladder_cols": [],
+        }
+    )
+    assert level.is_passable(10, 5) is True

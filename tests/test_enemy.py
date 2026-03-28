@@ -267,7 +267,18 @@ class TestEnemyGold:
         level = _make_level(patch)
         e = Enemy(10, 13)
         e.has_gold = True
-        e._die(level)
+        e.die(level)
+        assert e.has_gold is False
+        assert level.get_tile(10, 13) == C.GOLD
+
+    def test_enemy_die_is_public(self):
+        """enemy.die() (public) kills the enemy and drops gold."""
+        patch = {(c, 14): C.SOLID_BRICK for c in range(C.GRID_COLS)}
+        level = _make_level(patch)
+        e = Enemy(10, 13)
+        e.has_gold = True
+        e.die(level)  # public method — not _die
+        assert e.state == EnemyState.DEAD
         assert e.has_gold is False
         assert level.get_tile(10, 13) == C.GOLD
 
