@@ -136,3 +136,5 @@ HUD_PADDING       = 8
 LADDER_RUNG_COUNT = 4
 ROPE_KNOT_SPACING = 8     # pixels between rope knots
 ROPE_KNOT_OFFSET  = 4     # pixels from tile edge to first knot
+TILE_SNAP_TOLERANCE = 2   # pixels; max y/x offset to count as tile-aligned
+PLAYER_ANIM_FPS = 8       # animation frame flips per second
