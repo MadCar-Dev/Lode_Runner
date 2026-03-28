@@ -101,7 +101,8 @@ class Player:
             self.facing = 1
         else:
             self.state = PlayerState.IDLE
-        if not self._is_on_rope(level):
+        nearest_col = round(self.x / C.TILE_SIZE)
+        if not level.is_rope(nearest_col, self.row):
             self.state = PlayerState.FALLING
 
     def _handle_climbing(self, dt: float, level: Level) -> None:
@@ -113,7 +114,10 @@ class Player:
             self._move_vertical(C.PLAYER_CLIMB_SPEED * C.TILE_SIZE * dt, level)
             self.state = PlayerState.CLIMBING_DOWN
         if not self._is_on_ladder(level):
-            self.state = PlayerState.IDLE
+            if self._is_on_floor(level):
+                self.state = PlayerState.IDLE
+            else:
+                self.state = PlayerState.FALLING
 
     def _handle_floor(self, dt: float, level: Level) -> None:
         self._snap_y()
@@ -157,6 +161,8 @@ class Player:
         return level.is_ladder(self.col, self.row)
 
     def _is_on_rope(self, level: Level) -> bool:
+        if self.x % C.TILE_SIZE > C.TILE_SNAP_TOLERANCE:
+            return False
         return level.is_rope(self.col, self.row)
 
     # ------------------------------------------------------------------

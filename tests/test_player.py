@@ -1,4 +1,5 @@
 """Tests for the Player state machine and physics."""
+
 from __future__ import annotations
 
 import pygame
@@ -12,19 +13,23 @@ from player import Player, PlayerState
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_level(grid_patch: dict[tuple[int, int], int],
-                player_col: int = 0, player_row: int = 0) -> Level:
+
+def _make_level(
+    grid_patch: dict[tuple[int, int], int], player_col: int = 0, player_row: int = 0
+) -> Level:
     """Build a minimal Level with the given tiles patched into an otherwise-empty grid."""
     grid = [[C.EMPTY] * C.GRID_COLS for _ in range(C.GRID_ROWS)]
     for (col, row), tile in grid_patch.items():
         grid[row][col] = tile
-    return Level({
-        "level": 1,
-        "grid": grid,
-        "player_spawn": {"col": player_col, "row": player_row},
-        "enemy_spawns": [],
-        "escape_ladder_cols": [],
-    })
+    return Level(
+        {
+            "level": 1,
+            "grid": grid,
+            "player_spawn": {"col": player_col, "row": player_row},
+            "enemy_spawns": [],
+            "escape_ladder_cols": [],
+        }
+    )
 
 
 def _floor_level(floor_row: int = 10, player_col: int = 5, player_row: int = 9) -> Level:
@@ -40,6 +45,7 @@ def _keydown(key: int) -> pygame.event.Event:
 # ---------------------------------------------------------------------------
 # TestPlayerInit
 # ---------------------------------------------------------------------------
+
 
 class TestPlayerInit:
     def test_position_pixels(self) -> None:
@@ -74,6 +80,7 @@ class TestPlayerInit:
 # ---------------------------------------------------------------------------
 # TestSupportDetection
 # ---------------------------------------------------------------------------
+
 
 class TestSupportDetection:
     def test_on_floor_aligned_solid_below(self) -> None:
@@ -126,10 +133,18 @@ class TestSupportDetection:
         p = Player(5, 5)
         assert p._is_on_rope(level) is False
 
+    def test_rope_no_grab_when_x_misaligned(self) -> None:
+        """MF-1: x-misaligned player must not grab an adjacent-col rope."""
+        level = _make_level({(5, 5): C.ROPE})
+        p = Player(5, 5)
+        p.x += C.TILE_SNAP_TOLERANCE + 1  # push beyond tolerance
+        assert p._is_on_rope(level) is False
+
 
 # ---------------------------------------------------------------------------
 # TestToggleInput
 # ---------------------------------------------------------------------------
+
 
 class TestToggleInput:
     def test_keydown_left_activates(self) -> None:
@@ -193,6 +208,7 @@ class TestToggleInput:
 # TestGravityAndFalling
 # ---------------------------------------------------------------------------
 
+
 class TestGravityAndFalling:
     def test_player_falls_when_unsupported(self) -> None:
         level = _make_level({})  # all empty
@@ -247,6 +263,7 @@ class TestGravityAndFalling:
 # ---------------------------------------------------------------------------
 # TestRunning
 # ---------------------------------------------------------------------------
+
 
 class TestRunning:
     def test_run_left(self) -> None:
@@ -312,6 +329,7 @@ class TestRunning:
 # TestClimbing
 # ---------------------------------------------------------------------------
 
+
 class TestClimbing:
     def test_climb_up_on_ladder(self) -> None:
         # Ladder at col 5, rows 3–8; floor at row 9; player starts at row 8
@@ -358,10 +376,28 @@ class TestClimbing:
         p.update(1 / 60, level)
         assert p.y >= initial_y  # no upward movement
 
+    def test_climb_off_ladder_top_transitions_to_falling(self) -> None:
+        """MF-2: climbing off the top of a ladder into empty space must yield FALLING, not IDLE."""
+        # Ladder occupies rows 5–7; row 4 (above) is empty; player at row 5 (top of ladder)
+        patch: dict[tuple[int, int], int] = {}
+        for r in range(5, 8):
+            patch[(5, r)] = C.LADDER
+        # No floor at row 4 — empty space above the ladder
+        level = _make_level(patch)
+        p = Player(5, 5)  # aligned at top of ladder
+        p._v_dir = -1  # press up
+        # Simulate several frames so the player climbs off the top
+        for _ in range(10):
+            p.update(1 / 60, level)
+            if p.state != PlayerState.CLIMBING_UP:
+                break
+        assert p.state == PlayerState.FALLING
+
 
 # ---------------------------------------------------------------------------
 # TestRope
 # ---------------------------------------------------------------------------
+
 
 class TestRope:
     def test_player_hangs_on_rope(self) -> None:
