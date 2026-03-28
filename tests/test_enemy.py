@@ -205,6 +205,26 @@ class TestEnemyTrapping:
         e.update(1 / 60, level, player)
         assert e.state == EnemyState.DEAD
 
+    def test_enemy_dies_on_hole_filling_state(self):
+        """Enemy dies when hole enters HOLE_FILLING state, not just when fully closed."""
+        patch = {(c, 14): C.DIGGABLE_BRICK for c in range(C.GRID_COLS)}
+        patch.update({(c, 15): C.SOLID_BRICK for c in range(C.GRID_COLS)})
+        level = _make_level(patch)
+        level.dig_hole(10, 14)
+        player = Player(0, 0)
+        e = Enemy(10, 13)
+        # Fall into hole
+        for _ in range(60):
+            e.update(1 / 60, level, player)
+            if e.state == EnemyState.TRAPPED:
+                break
+        assert e.state == EnemyState.TRAPPED
+        # Advance hole to HOLE_FILLING only (not fully closed)
+        level.update_holes(C.HOLE_OPEN_DURATION + 0.1)
+        assert level.get_tile(10, 14) == C.HOLE_FILLING
+        e.update(1 / 60, level, player)
+        assert e.state == EnemyState.DEAD
+
 
 class TestEnemyRespawn:
     def test_dead_enemy_respawns_at_spawn_position(self):
@@ -216,7 +236,7 @@ class TestEnemyRespawn:
         e.state = EnemyState.DEAD
         e._respawn_timer = 0.0
         # Tick past respawn delay
-        for _ in range(int(C.HOLE_FILL_DURATION * 60) + 60):
+        for _ in range(int(C.ENEMY_RESPAWN_DELAY * 60) + 60):
             e.update(1 / 60, level, player)
             if e.state != EnemyState.DEAD:
                 break
