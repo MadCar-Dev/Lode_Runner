@@ -93,6 +93,8 @@ levels/              # Level data files
 | `testing_expert` | Testing Expert |
 | `code_reviewer` | Code Reviewer |
 | `devops_engineer` | DevOps Engineer |
+| `optimization_engineer` | Optimization Engineer |
+| `technical_writer` | Technical Writer |
 
 ### Agent Lifecycle
 
@@ -142,3 +144,44 @@ When the orchestrator spawns subagents via the Agent tool:
 3. **Post a `task_assignment` message** to the worker's role slot immediately after registering
 4. **Pass the assigned name and worktree path** into the subagent prompt
 5. **Each subagent writes its name** to `.claude/agentops-agent-name` in its worktree root
+
+### Maximizing Parallelism (IMPORTANT)
+
+The orchestrator MUST dispatch independent tasks simultaneously, not sequentially. This is
+the single biggest efficiency lever — sequential dispatch wastes wall-clock time.
+
+**Before dispatching a sprint's tasks, classify dependencies:**
+- Tasks touching different files with no imports between them → **parallel**
+- TDD tests + implementation of the same module → **sequential** (tests first)
+- Integration task that imports from other sprint tasks → **sequential** (after dependencies)
+
+**Example sprint plan:**
+```
+Sprint 2: Player Movement
+  Wave 1 (parallel): constants.py additions + player.py tests (TDD)
+  Wave 2 (parallel): player.py implementation + renderer.py player drawing
+  Wave 3 (sequential): main.py integration (depends on wave 1+2)
+  Wave 4: code review gate
+```
+
+**Dispatch all tasks in a wave as a single message with multiple Agent tool calls.**
+Use `isolation: "worktree"` for each to avoid file conflicts. Never dispatch one task,
+wait for it to complete, then dispatch the next independent task.
+
+### Sprint Transition Efficiency
+
+To minimize dead time between sprints:
+
+1. **Pre-plan the next sprint** while the gate review is running — analyze what the next
+   sprint needs, identify task dependencies, and have the dispatch ready
+2. **Pipeline the review** — if the gate review returns `needs-work`, dispatch the fix
+   agent AND start planning the next sprint in parallel
+3. **Never re-register as orchestrator** between sprints — maintain your identity and
+   heartbeat throughout the entire session
+
+### Code Review Efficiency
+
+When dispatching code reviewers:
+- Tell them which files changed and how many commits to diff: `git diff HEAD~N`
+- Scope the review to the sprint's changes, not the entire codebase
+- This keeps review cost proportional to change size, not project size
