@@ -147,3 +147,8 @@ PLAYER_ANIM_FRAMES = 8  # total animation frames per cycle
 PLAYER_MOVE_THRESHOLD = 0.001  # min pixel delta to count as moved (sub-pixel guard)
 ENEMY_ANIM_FPS = 8  # animation frame flips per second
 ENEMY_ANIM_FRAMES = 8  # total animation frames per cycle
+
+# ---------------------------------------------------------------------------
+# Audio
+# ---------------------------------------------------------------------------
+AUDIO_SAMPLE_RATE: int = 44100

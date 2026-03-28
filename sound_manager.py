@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pygame
 
+import constants as C
+
 
 class SoundManager:
     """Synthesizes and plays all game audio. No external audio files.
@@ -15,13 +17,13 @@ class SoundManager:
     def __init__(self) -> None:
         self.enabled: bool = False
         self._sounds: dict[str, pygame.mixer.Sound] = {}
-        self._music_playing: bool = False
+        self._music_playing: bool = True
         self._bgm_tracks: dict[str, np.ndarray] = {}
         self._bgm_channel: pygame.mixer.Channel | None = None
         self._current_bgm: str = ""
         try:
             if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=512)
+                pygame.mixer.init(frequency=C.AUDIO_SAMPLE_RATE, size=-16, channels=1, buffer=512)
             self.enabled = True
         except Exception:
             return
@@ -50,7 +52,7 @@ class SoundManager:
         arr = self._bgm_tracks.get(name)
         if arr is None:
             return
-        snd = pygame.sndarray.make_sound(arr)
+        snd = self._make_sound(arr)
         if self._bgm_channel is not None:
             self._bgm_channel.stop()
             loop = -1 if name == "bgm_game" else 0
@@ -78,7 +80,7 @@ class SoundManager:
     @staticmethod
     def _sine(freq: float, duration: float, volume: float = 0.3) -> np.ndarray:
         """Generate a mono 16-bit sine wave."""
-        sr = 44100
+        sr = C.AUDIO_SAMPLE_RATE
         t = np.linspace(0, duration, int(sr * duration), endpoint=False)
         wave = np.sin(2 * np.pi * freq * t) * volume
         return (wave * 32767).astype(np.int16)
@@ -86,7 +88,7 @@ class SoundManager:
     @staticmethod
     def _square(freq: float, duration: float, volume: float = 0.2) -> np.ndarray:
         """Generate a mono 16-bit square wave."""
-        sr = 44100
+        sr = C.AUDIO_SAMPLE_RATE
         t = np.linspace(0, duration, int(sr * duration), endpoint=False)
         wave = np.sign(np.sin(2 * np.pi * freq * t)) * volume
         return (wave * 32767).astype(np.int16)
@@ -94,7 +96,7 @@ class SoundManager:
     @staticmethod
     def _noise(duration: float, volume: float = 0.15) -> np.ndarray:
         """Generate mono 16-bit white noise."""
-        sr = 44100
+        sr = C.AUDIO_SAMPLE_RATE
         samples = int(sr * duration)
         rng = np.random.default_rng(seed=42)
         wave = rng.uniform(-1.0, 1.0, samples) * volume
@@ -154,7 +156,7 @@ class SoundManager:
         self._sounds["enemy_trap"] = self._make_sound(trap)
 
         # Enemy death — descending buzz
-        sr = 44100
+        sr = C.AUDIO_SAMPLE_RATE
         dur = 0.3
         t = np.linspace(0, dur, int(sr * dur), endpoint=False)
         freq = np.linspace(300, 80, len(t))
@@ -197,7 +199,7 @@ class SoundManager:
 
     def _build_bgm(self) -> None:
         """Synthesize background music tracks as numpy arrays."""
-        sr = 44100
+        sr = C.AUDIO_SAMPLE_RATE
 
         # BGM game — simple looping bass line (2 bars, ~2 seconds)
         notes = [130.81, 146.83, 164.81, 146.83]  # C3 D3 E3 D3
