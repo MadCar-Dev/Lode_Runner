@@ -127,3 +127,12 @@ CONTROL_HOLD_MOVE = "hold"  # Modern: hold key to move
 
 DIG_MODE_DIRECTIONAL = "directional"  # Z/X dig relative to player facing
 DIG_MODE_FIXED = "fixed"  # Z always left, X always right
+
+# ---------------------------------------------------------------------------
+# Rendering constants
+# ---------------------------------------------------------------------------
+HUD_FONT_SIZE     = 14
+HUD_PADDING       = 8
+LADDER_RUNG_COUNT = 4
+ROPE_KNOT_SPACING = 8     # pixels between rope knots
+ROPE_KNOT_OFFSET  = 4     # pixels from tile edge to first knot

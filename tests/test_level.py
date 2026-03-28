@@ -241,6 +241,15 @@ class TestTilePredicates:
     def test_is_passable_hole_open(self, full_tile_level):
         assert full_tile_level.is_passable(8, 0) is True
 
+    def test_is_passable_false_brick(self, full_tile_level):
+        assert full_tile_level.is_passable(7, 0) is True
+
+    def test_is_passable_hole_filling(self, full_tile_level):
+        assert full_tile_level.is_passable(9, 0) is False
+
+    def test_is_passable_hidden_ladder(self, full_tile_level):
+        assert full_tile_level.is_passable(6, 0) is True
+
 
 # ---------------------------------------------------------------------------
 # Gold tracking

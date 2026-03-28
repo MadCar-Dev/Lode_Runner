@@ -16,7 +16,7 @@ class Renderer:
         # Offscreen surface at native resolution; scaled to window on flip
         self._surface = pygame.Surface((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
         pygame.font.init()
-        self._font = pygame.font.SysFont("monospace", 14)
+        self._font = pygame.font.SysFont("monospace", C.HUD_FONT_SIZE)
 
     # ------------------------------------------------------------------
     # Public API
@@ -79,7 +79,7 @@ class Renderer:
             pygame.draw.line(self._surface, C.COLOR_LADDER,
                              (rail_x2, y), (rail_x2, y + ts - 1))
             # Four rungs evenly spaced
-            for i in range(4):
+            for i in range(C.LADDER_RUNG_COUNT):
                 rung_y = y + (ts * i) // 4 + ts // 8
                 pygame.draw.line(self._surface, C.COLOR_LADDER,
                                  (rail_x1, rung_y), (rail_x2, rung_y))
@@ -89,7 +89,7 @@ class Renderer:
             rope_y = y + ts // 3
             pygame.draw.line(self._surface, C.COLOR_ROPE,
                              (x, rope_y), (x + ts - 1, rope_y), 2)
-            for kx in range(x + 4, x + ts, 8):
+            for kx in range(x + C.ROPE_KNOT_OFFSET, x + ts, C.ROPE_KNOT_SPACING):
                 pygame.draw.circle(self._surface, C.COLOR_ROPE, (kx, rope_y), 2)
 
         elif tile_id == C.GOLD:
@@ -128,4 +128,4 @@ class Renderer:
         pygame.draw.rect(self._surface, C.COLOR_HUD_BG, hud_rect)
         label = self._font.render("LODE RUNNER  |  Sprint 1 Foundation", True,
                                   C.COLOR_HUD_TEXT)
-        self._surface.blit(label, (8, 8))
+        self._surface.blit(label, (C.HUD_PADDING, C.HUD_PADDING))
