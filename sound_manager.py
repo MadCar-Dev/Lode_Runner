@@ -17,7 +17,7 @@ class SoundManager:
     def __init__(self) -> None:
         self.enabled: bool = False
         self._sounds: dict[str, pygame.mixer.Sound] = {}
-        self._music_playing: bool = True
+        self._music_playing: bool = False
         self._bgm_tracks: dict[str, np.ndarray] = {}
         self._bgm_channel: pygame.mixer.Channel | None = None
         self._current_bgm: str = ""
