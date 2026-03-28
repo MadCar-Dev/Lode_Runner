@@ -131,10 +131,12 @@ DIG_MODE_FIXED = "fixed"  # Z always left, X always right
 # ---------------------------------------------------------------------------
 # Rendering constants
 # ---------------------------------------------------------------------------
-HUD_FONT_SIZE     = 14
-HUD_PADDING       = 8
+HUD_FONT_SIZE = 14
+HUD_PADDING = 8
 LADDER_RUNG_COUNT = 4
-ROPE_KNOT_SPACING = 8     # pixels between rope knots
-ROPE_KNOT_OFFSET  = 4     # pixels from tile edge to first knot
-TILE_SNAP_TOLERANCE = 2   # pixels; max y/x offset to count as tile-aligned
-PLAYER_ANIM_FPS = 8       # animation frame flips per second
+ROPE_KNOT_SPACING = 8  # pixels between rope knots
+ROPE_KNOT_OFFSET = 4  # pixels from tile edge to first knot
+TILE_SNAP_TOLERANCE = 2  # pixels; max y/x offset to count as tile-aligned
+PLAYER_ANIM_FPS = 8  # animation frame flips per second
+PLAYER_ANIM_FRAMES = 8  # total animation frames per cycle
+PLAYER_MOVE_THRESHOLD = 0.001  # min pixel delta to count as moved (sub-pixel guard)

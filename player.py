@@ -1,4 +1,5 @@
 """Player entity — state machine, input handling, and physics."""
+
 from __future__ import annotations
 
 from enum import Enum, auto
@@ -171,8 +172,8 @@ class Player:
     def _move_horizontal(self, dx: float, level: Level) -> bool:
         target_x = self.x + dx
         if dx > 0:
-            cur_right = int(self.x) + C.TILE_SIZE - 1
-            new_right = int(target_x) + C.TILE_SIZE - 1
+            cur_right = int(self.x) + C.TILE_SIZE - 1  # last pixel within tile (0-indexed)
+            new_right = int(target_x) + C.TILE_SIZE - 1  # last pixel within tile (0-indexed)
             cur_right_col = cur_right // C.TILE_SIZE
             new_right_col = new_right // C.TILE_SIZE
             if new_right_col > cur_right_col and level.is_solid(new_right_col, self.row):
@@ -183,7 +184,7 @@ class Player:
             if new_left_col < cur_left_col and level.is_solid(new_left_col, self.row):
                 target_x = float((new_left_col + 1) * C.TILE_SIZE)
         target_x = max(0.0, min(target_x, float((C.GRID_COLS - 1) * C.TILE_SIZE)))
-        moved = abs(target_x - self.x) > 0.001
+        moved = abs(target_x - self.x) > C.PLAYER_MOVE_THRESHOLD
         self.x = target_x
         return moved
 
@@ -212,4 +213,4 @@ class Player:
         self._anim_timer += dt
         if self._anim_timer >= 1.0 / C.PLAYER_ANIM_FPS:
             self._anim_timer -= 1.0 / C.PLAYER_ANIM_FPS
-            self.anim_frame = (self.anim_frame + 1) % 8
+            self.anim_frame = (self.anim_frame + 1) % C.PLAYER_ANIM_FRAMES
