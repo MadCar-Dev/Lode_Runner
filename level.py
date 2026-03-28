@@ -22,10 +22,10 @@ class Level:
         # Deep-copy grid so mutations don't affect the source dict
         self._grid: list[list[int]] = [list(row) for row in data["grid"]]
         self.player_spawn = SpawnPoint(**data["player_spawn"])
-        self.enemy_spawns: list[SpawnPoint] = [
-            SpawnPoint(**s) for s in data["enemy_spawns"]
-        ]
+        self.enemy_spawns: list[SpawnPoint] = [SpawnPoint(**s) for s in data["enemy_spawns"]]
         self.escape_ladder_cols: list[int] = list(data["escape_ladder_cols"])
+        # Hole state: (col, row) -> elapsed seconds since dig
+        self._holes: dict[tuple[int, int], float] = {}
 
     # ------------------------------------------------------------------
     # Tile access
@@ -69,6 +69,57 @@ class Level:
     def is_passable(self, col: int, row: int) -> bool:
         """True if an entity can occupy this tile position."""
         return self.get_tile(col, row) in C.PASSABLE_TILES
+
+    # ------------------------------------------------------------------
+    # Hole lifecycle
+    # ------------------------------------------------------------------
+
+    def dig_hole(self, col: int, row: int) -> bool:
+        """Dig a hole at (col, row). Returns True if successful.
+
+        Only DIGGABLE_BRICK can be dug. Converts tile to HOLE_OPEN and
+        starts the hole timer. Returns False if tile is not diggable or
+        out of bounds.
+        """
+        if not self.is_diggable(col, row):
+            return False
+        self.set_tile(col, row, C.HOLE_OPEN)
+        self._holes[(col, row)] = 0.0
+        return True
+
+    def update_holes(self, dt: float) -> None:
+        """Advance all hole timers. Transitions:
+
+        - After HOLE_OPEN_DURATION seconds: HOLE_OPEN -> HOLE_FILLING
+        - After HOLE_OPEN_DURATION + HOLE_FILL_DURATION seconds: HOLE_FILLING -> DIGGABLE_BRICK
+        """
+        closed: list[tuple[int, int]] = []
+        for pos, elapsed in self._holes.items():
+            elapsed += dt
+            self._holes[pos] = elapsed
+            col, row = pos
+            if elapsed >= C.HOLE_OPEN_DURATION + C.HOLE_FILL_DURATION:
+                self.set_tile(col, row, C.DIGGABLE_BRICK)
+                closed.append(pos)
+            elif elapsed >= C.HOLE_OPEN_DURATION:
+                self.set_tile(col, row, C.HOLE_FILLING)
+        for pos in closed:
+            del self._holes[pos]
+
+    def get_hole_progress(self, col: int, row: int) -> float:
+        """Return fill progress for a hole: 0.0 = just opened, 1.0 = fully filled.
+
+        Returns 0.0 for non-hole tiles and during the HOLE_OPEN phase.
+        During HOLE_FILLING, returns a float 0.0-1.0 proportional to how
+        much of HOLE_FILL_DURATION has elapsed.
+        """
+        if (col, row) not in self._holes:
+            return 0.0
+        elapsed = self._holes[(col, row)]
+        if elapsed < C.HOLE_OPEN_DURATION:
+            return 0.0
+        fill_elapsed = elapsed - C.HOLE_OPEN_DURATION
+        return min(fill_elapsed / C.HOLE_FILL_DURATION, 1.0)
 
     # ------------------------------------------------------------------
     # Gold tracking
