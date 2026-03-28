@@ -28,18 +28,18 @@ FULL_TILE_DATA = {
 }
 # Manually place specific tiles for targeted tests
 _full_grid = [row[:] for row in FULL_TILE_DATA["grid"]]
-_full_grid[0][0]  = C.EMPTY
-_full_grid[0][1]  = C.DIGGABLE_BRICK
-_full_grid[0][2]  = C.SOLID_BRICK
-_full_grid[0][3]  = C.LADDER
-_full_grid[0][4]  = C.ROPE
-_full_grid[0][5]  = C.GOLD
-_full_grid[0][6]  = C.HIDDEN_LADDER
-_full_grid[0][7]  = C.FALSE_BRICK
-_full_grid[0][8]  = C.HOLE_OPEN
-_full_grid[0][9]  = C.HOLE_FILLING
-_full_grid[1][0]  = C.GOLD   # second gold for multi-gold tests
-_full_grid[1][6]  = C.HIDDEN_LADDER  # second hidden ladder tile (same col as [0][6])
+_full_grid[0][0] = C.EMPTY
+_full_grid[0][1] = C.DIGGABLE_BRICK
+_full_grid[0][2] = C.SOLID_BRICK
+_full_grid[0][3] = C.LADDER
+_full_grid[0][4] = C.ROPE
+_full_grid[0][5] = C.GOLD
+_full_grid[0][6] = C.HIDDEN_LADDER
+_full_grid[0][7] = C.FALSE_BRICK
+_full_grid[0][8] = C.HOLE_OPEN
+_full_grid[0][9] = C.HOLE_FILLING
+_full_grid[1][0] = C.GOLD   # second gold for multi-gold tests
+_full_grid[1][6] = C.HIDDEN_LADDER  # second hidden ladder tile (same col as [0][6])
 FULL_TILE_DATA["grid"] = _full_grid
 FULL_TILE_DATA["escape_ladder_cols"] = [6]
 
@@ -77,11 +77,9 @@ class TestLevelConstruction:
         assert minimal_level.escape_ladder_cols == [13]
 
     def test_grid_dimensions(self, minimal_level):
-        from level import Level
-        level = Level(MINIMAL_LEVEL_DATA)
         # grid is 16 rows x 28 cols
-        assert len(level._grid) == C.GRID_ROWS
-        assert all(len(row) == C.GRID_COLS for row in level._grid)
+        assert len(minimal_level._grid) == C.GRID_ROWS
+        assert all(len(row) == C.GRID_COLS for row in minimal_level._grid)
 
     def test_from_file_round_trip(self, tmp_path, minimal_level):
         from level import Level
