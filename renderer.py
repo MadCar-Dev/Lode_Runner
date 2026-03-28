@@ -26,6 +26,7 @@ class Renderer:
         self._surface = pygame.Surface((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
         pygame.font.init()
         self._font = pygame.font.SysFont("monospace", C.HUD_FONT_SIZE)
+        self._big_font = pygame.font.SysFont("monospace", C.HUD_FONT_SIZE * 2)
 
     # ------------------------------------------------------------------
     # Public API
@@ -354,8 +355,7 @@ class Renderer:
             color = C.COLOR_ENEMY_BODY
         else:
             return
-        big_font = pygame.font.SysFont("monospace", C.HUD_FONT_SIZE * 2)
-        label = big_font.render(msg, True, color)
+        label = self._big_font.render(msg, True, color)
         cx = (C.WINDOW_WIDTH - label.get_width()) // 2
         cy = (C.WINDOW_HEIGHT - label.get_height()) // 2
         self._surface.blit(label, (cx, cy))
