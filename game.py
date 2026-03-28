@@ -12,7 +12,9 @@ from player import Player
 
 
 class GamePhase(Enum):
+    TITLE = auto()
     PLAYING = auto()
+    PAUSED = auto()
     PLAYER_DEAD = auto()
     LEVEL_COMPLETE = auto()
     GAME_OVER = auto()
@@ -25,9 +27,35 @@ class GameState:
         self.level_number: int = level_number
         self.score: int = 0
         self.lives: int = C.STARTING_LIVES
-        self.phase: GamePhase = GamePhase.PLAYING
+        self.phase: GamePhase = GamePhase.TITLE
         self._phase_timer: float = 0.0
+        self._pending_effects: list[dict] = []
         self._load_level()
+
+    def start_game(self) -> None:
+        """Transition from TITLE to PLAYING, resetting score/lives."""
+        self._load_level()
+        self.score = 0
+        self.lives = C.STARTING_LIVES
+        self.phase = GamePhase.PLAYING
+        self._phase_timer = 0.0
+        self._pending_effects.clear()
+
+    def pause(self) -> None:
+        """Pause during PLAYING."""
+        if self.phase == GamePhase.PLAYING:
+            self.phase = GamePhase.PAUSED
+
+    def unpause(self) -> None:
+        """Resume from PAUSED."""
+        if self.phase == GamePhase.PAUSED:
+            self.phase = GamePhase.PLAYING
+
+    def drain_effects(self) -> list[dict]:
+        """Return and clear the pending effects list."""
+        effects = self._pending_effects.copy()
+        self._pending_effects.clear()
+        return effects
 
     def _load_level(self) -> None:
         """Load the current level_number. Falls back to level 1 if file missing."""
@@ -53,7 +81,7 @@ class GameState:
             self._update_player_dead(dt)
         elif self.phase == GamePhase.LEVEL_COMPLETE:
             self._update_level_complete(dt)
-        # GAME_OVER: no per-frame updates
+        # TITLE, PAUSED, GAME_OVER: no per-frame updates
 
     def _update_playing(self, dt: float) -> None:
         if self.player.is_alive:
@@ -99,9 +127,13 @@ class GameState:
             self.level.set_tile(self.player.col, self.player.row, C.EMPTY)
             self.score += C.SCORE_GOLD
             self.gold_remaining -= 1
+            self._pending_effects.append(
+                {"type": "gold_collected", "col": self.player.col, "row": self.player.row}
+            )
             if self.gold_remaining <= 0:
                 self.gold_remaining = 0
                 self.level.reveal_escape_ladder()
+                self._pending_effects.append({"type": "ladder_reveal"})
 
     def _check_player_collision(self) -> None:
         """Kill player if any live enemy occupies the same tile."""
@@ -114,6 +146,7 @@ class GameState:
                 self.player.kill()
                 self.phase = GamePhase.PLAYER_DEAD
                 self._phase_timer = 0.0
+                self._pending_effects.append({"type": "player_death"})
                 return
 
     def _check_enemy_score(self, old_state: EnemyState, enemy: Enemy) -> None:
@@ -134,3 +167,4 @@ class GameState:
             self.lives += C.LIVES_PER_LEVEL
             self.phase = GamePhase.LEVEL_COMPLETE
             self._phase_timer = 0.0
+            self._pending_effects.append({"type": "level_complete"})

@@ -17,7 +17,7 @@ class TestGameStateInit:
         assert gs.level_number == 1
         assert gs.score == 0
         assert gs.lives == C.STARTING_LIVES
-        assert gs.phase == GamePhase.PLAYING
+        assert gs.phase == GamePhase.TITLE
 
     def test_gold_remaining_matches_level(self):
         gs = GameState()
@@ -95,7 +95,7 @@ class TestPlayerEnemyCollision:
         enemy.state = EnemyState.DEAD
         gs.enemies = [enemy]
         gs._check_player_collision()
-        assert gs.phase == GamePhase.PLAYING  # no kill
+        assert gs.phase == GamePhase.TITLE  # no kill, phase unchanged
 
     def test_trapped_enemy_does_not_kill_player(self):
         gs = GameState()
@@ -104,7 +104,7 @@ class TestPlayerEnemyCollision:
         enemy.state = EnemyState.TRAPPED
         gs.enemies = [enemy]
         gs._check_player_collision()
-        assert gs.phase == GamePhase.PLAYING  # no kill
+        assert gs.phase == GamePhase.TITLE  # no kill, phase unchanged
 
 
 class TestGoldPickup:
@@ -247,7 +247,7 @@ class TestLevelComplete:
         gs.gold_remaining = 1  # still gold left
         gs.player = Player(0, 0)
         gs._check_level_complete()
-        assert gs.phase == GamePhase.PLAYING  # not complete yet
+        assert gs.phase == GamePhase.TITLE  # not complete yet, phase unchanged
 
     def test_level_complete_awards_score_and_life(self):
         gs = GameState()
@@ -269,3 +269,85 @@ class TestLevelComplete:
         gs.update(C.LEVEL_COMPLETE_DELAY + 0.1)
         assert gs.phase == GamePhase.PLAYING
         assert gs.score == 500  # score persists across levels
+
+
+class TestTitleAndPausedPhases:
+    def test_initial_phase_is_title(self):
+        gs = GameState()
+        assert gs.phase == GamePhase.TITLE
+
+    def test_start_game_transitions_to_playing(self):
+        gs = GameState()
+        gs.start_game()
+        assert gs.phase == GamePhase.PLAYING
+
+    def test_pause_during_playing_sets_paused(self):
+        gs = GameState()
+        gs.start_game()
+        gs.pause()
+        assert gs.phase == GamePhase.PAUSED
+
+    def test_unpause_returns_to_playing(self):
+        gs = GameState()
+        gs.start_game()
+        gs.pause()
+        gs.unpause()
+        assert gs.phase == GamePhase.PLAYING
+
+    def test_pause_only_works_in_playing(self):
+        gs = GameState()
+        # In TITLE phase — pause should be no-op
+        gs.pause()
+        assert gs.phase == GamePhase.TITLE
+
+    def test_update_does_nothing_while_paused(self):
+        gs = GameState()
+        gs.start_game()
+        gs.pause()
+        gs.player.x = 100.0
+        gs.update(1.0)
+        assert gs.player.x == 100.0  # no movement
+
+    def test_drain_effects_returns_and_clears(self):
+        gs = GameState()
+        gs._pending_effects.append({"type": "gold_collected", "col": 5, "row": 3})
+        effects = gs.drain_effects()
+        assert len(effects) == 1
+        assert effects[0]["type"] == "gold_collected"
+        assert gs.drain_effects() == []  # cleared
+
+    def test_gold_pickup_emits_effect(self):
+        patch_data = {(5, 13): C.GOLD, **{(c, 14): C.SOLID_BRICK for c in range(C.GRID_COLS)}}
+        gs = _make_game_with_patch(patch_data)
+        gs.player = Player(5, 13)
+        gs._check_gold_pickup()
+        effects = gs.drain_effects()
+        assert any(e["type"] == "gold_collected" for e in effects)
+
+    def test_ladder_reveal_emits_effect(self):
+        patch_data = {(5, 13): C.GOLD, **{(c, 14): C.SOLID_BRICK for c in range(C.GRID_COLS)}}
+        patch_data[(0, 0)] = C.HIDDEN_LADDER
+        gs = _make_game_with_patch(patch_data)
+        gs.player = Player(5, 13)
+        gs._check_gold_pickup()
+        effects = gs.drain_effects()
+        assert any(e["type"] == "ladder_reveal" for e in effects)
+
+    def test_player_death_emits_effect(self):
+        gs = GameState()
+        gs.player = Player(5, 5)
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.RUNNING_RIGHT
+        gs.enemies = [enemy]
+        gs._check_player_collision()
+        effects = gs.drain_effects()
+        assert any(e["type"] == "player_death" for e in effects)
+
+    def test_level_complete_emits_effect(self):
+        gs = GameState()
+        gs.gold_remaining = 0
+        gs.level.reveal_escape_ladder()
+        gs.player = Player(0, 0)
+        gs._check_level_complete()
+        effects = gs.drain_effects()
+        assert any(e["type"] == "level_complete" for e in effects)
