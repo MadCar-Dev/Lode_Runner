@@ -5,6 +5,7 @@ import sys
 import pygame
 
 import constants as C
+from enemy import Enemy
 from level import Level
 from player import Player
 from renderer import Renderer
@@ -19,6 +20,7 @@ def main() -> None:
 
     level = Level.from_file("levels/level_01.json")
     player = Player(level.player_spawn.col, level.player_spawn.row)
+    enemies = [Enemy(sp.col, sp.row) for sp in level.enemy_spawns]
     renderer = Renderer(screen)
 
     running = True
@@ -37,7 +39,12 @@ def main() -> None:
         if player.is_alive:
             player.update(dt, level)
 
-        renderer.draw(level, player)
+        level.update_holes(dt)
+
+        for enemy in enemies:
+            enemy.update(dt, level, player)
+
+        renderer.draw(level, player, enemies)
         pygame.display.flip()
 
     pygame.quit()

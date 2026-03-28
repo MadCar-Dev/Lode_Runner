@@ -11,6 +11,7 @@ from level import Level
 from player import PlayerState
 
 if TYPE_CHECKING:
+    from enemy import Enemy
     from player import Player
 
 
@@ -28,10 +29,17 @@ class Renderer:
     # Public API
     # ------------------------------------------------------------------
 
-    def draw(self, level: Level, player: "Player | None" = None) -> None:
-        """Draw the full frame: clear → tiles → player → HUD → blit to screen."""
+    def draw(
+        self,
+        level: Level,
+        player: "Player | None" = None,
+        enemies: "list[Enemy] | None" = None,
+    ) -> None:
+        """Draw the full frame: clear -> tiles -> enemies -> player -> HUD -> blit to screen."""
         self._surface.fill(C.COLOR_BACKGROUND)
         self._draw_tiles(level)
+        if enemies is not None:
+            self._draw_enemies(enemies)
         if player is not None:
             self._draw_player(player)
         self._draw_hud()
@@ -240,6 +248,89 @@ class Renderer:
                 (head_cx, leg_top),
                 (px + ts // 2 + step, py + ts - 2),
                 2,
+            )
+
+    def _draw_enemies(self, enemies: "list[Enemy]") -> None:
+        """Draw all enemy stick figures."""
+        from enemy import EnemyState
+
+        for enemy in enemies:
+            if enemy.state == EnemyState.DEAD:
+                continue  # dead enemies are invisible
+            self._draw_enemy(enemy)
+
+    def _draw_enemy(self, enemy: "Enemy") -> None:
+        """Draw a single enemy stick figure — same structure as player but red."""
+        from enemy import EnemyState
+
+        px = int(enemy.x)
+        py = int(enemy.y) + C.HUD_HEIGHT
+        ts = C.TILE_SIZE
+
+        body = C.COLOR_ENEMY_BODY
+        outline = C.COLOR_ENEMY_OUTLINE
+
+        # Head
+        head_cx = px + ts // 2
+        head_cy = py + ts // 5
+        pygame.draw.circle(self._surface, outline, (head_cx, head_cy), ts // 6 + 1)
+        pygame.draw.circle(self._surface, body, (head_cx, head_cy), ts // 6)
+
+        # Torso
+        torso_top = py + ts // 3
+        torso_bot = py + (ts * 2) // 3
+        pygame.draw.line(self._surface, body, (head_cx, torso_top), (head_cx, torso_bot), 2)
+
+        # Arms
+        arm_y = py + ts * 5 // 12
+        state = enemy.state
+        if state in (EnemyState.CLIMBING_UP, EnemyState.CLIMBING_DOWN):
+            arm_up = enemy.anim_frame % 2 == 0
+            left_y = arm_y - (ts // 8 if arm_up else 0)
+            right_y = arm_y - (0 if arm_up else ts // 8)
+            pygame.draw.line(self._surface, body, (head_cx, arm_y), (px + ts // 4, left_y), 2)
+            pygame.draw.line(
+                self._surface, body, (head_cx, arm_y), (px + (ts * 3) // 4, right_y), 2
+            )
+        elif state in (EnemyState.ROPE_LEFT, EnemyState.ROPE_RIGHT):
+            pygame.draw.line(self._surface, body, (head_cx, arm_y), (px + ts // 4, py + ts // 8), 2)
+            pygame.draw.line(
+                self._surface, body, (head_cx, arm_y), (px + (ts * 3) // 4, py + ts // 8), 2
+            )
+        elif state == EnemyState.TRAPPED:
+            # Arms up, reaching out of hole
+            pygame.draw.line(self._surface, body, (head_cx, arm_y), (px + ts // 6, py + ts // 8), 2)
+            pygame.draw.line(
+                self._surface, body, (head_cx, arm_y), (px + (ts * 5) // 6, py + ts // 8), 2
+            )
+        else:
+            swing = (ts // 8) * (1 if enemy.anim_frame % 2 == 0 else -1)
+            pygame.draw.line(
+                self._surface, body, (head_cx, arm_y), (px + ts // 4, arm_y + swing), 2
+            )
+            pygame.draw.line(
+                self._surface, body, (head_cx, arm_y), (px + (ts * 3) // 4, arm_y - swing), 2
+            )
+
+        # Legs
+        leg_top = torso_bot
+        if state in (EnemyState.ROPE_LEFT, EnemyState.ROPE_RIGHT):
+            pygame.draw.line(
+                self._surface, body, (head_cx, leg_top), (px + ts // 3, py + ts - 2), 2
+            )
+            pygame.draw.line(
+                self._surface, body, (head_cx, leg_top), (px + (ts * 2) // 3, py + ts - 2), 2
+            )
+        elif state == EnemyState.TRAPPED:
+            # Legs hidden (in hole)
+            pass
+        else:
+            step = (ts // 5) * (1 if enemy.anim_frame % 2 == 0 else -1)
+            pygame.draw.line(
+                self._surface, body, (head_cx, leg_top), (px + ts // 2 - step, py + ts - 2), 2
+            )
+            pygame.draw.line(
+                self._surface, body, (head_cx, leg_top), (px + ts // 2 + step, py + ts - 2), 2
             )
 
     # ------------------------------------------------------------------
