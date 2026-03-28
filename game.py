@@ -65,7 +65,7 @@ class GameState:
             self._check_enemy_score(old_state, enemy)
         self._check_gold_pickup()
         self._check_player_collision()
-        # Note: _check_level_complete is added in Task 5
+        self._check_level_complete()
 
     def _update_player_dead(self, dt: float) -> None:
         self.level.update_holes(dt)
@@ -122,3 +122,15 @@ class GameState:
             self.score += C.SCORE_ENEMY_TRAPPED
         elif old_state == EnemyState.TRAPPED and enemy.state == EnemyState.DEAD:
             self.score += C.SCORE_ENEMY_KILLED
+
+    def _check_level_complete(self) -> None:
+        """Detect when player reaches the escape ladder at the top of the level."""
+        if self.gold_remaining > 0:
+            return
+        if not self.player.is_alive:
+            return
+        if self.player.col in self.level.escape_ladder_cols and self.player.row == 0:
+            self.score += C.SCORE_LEVEL_COMPLETE
+            self.lives += C.LIVES_PER_LEVEL
+            self.phase = GamePhase.LEVEL_COMPLETE
+            self._phase_timer = 0.0

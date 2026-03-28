@@ -189,3 +189,83 @@ class TestEnemyScoring:
         enemy.state = EnemyState.FALLING
         gs._check_enemy_score(old_state, enemy)
         assert gs.score == 0
+
+
+class TestDeathAndRestart:
+    def test_player_dead_phase_decrements_lives_after_timer(self):
+        gs = GameState()
+        initial_lives = gs.lives
+        gs.phase = GamePhase.PLAYER_DEAD
+        gs._phase_timer = 0.0
+        # Advance past DEATH_DISPLAY_TIME
+        gs.update(C.DEATH_DISPLAY_TIME + 0.1)
+        assert gs.lives == initial_lives - 1
+
+    def test_death_with_lives_remaining_restarts_level(self):
+        gs = GameState()
+        gs.lives = 2
+        gs.phase = GamePhase.PLAYER_DEAD
+        gs._phase_timer = 0.0
+        gs.update(C.DEATH_DISPLAY_TIME + 0.1)
+        assert gs.phase == GamePhase.PLAYING
+        assert gs.lives == 1
+        # Player should be reset to spawn
+        assert gs.player.col == gs.level.player_spawn.col
+        assert gs.player.row == gs.level.player_spawn.row
+
+    def test_death_at_zero_lives_triggers_game_over(self):
+        gs = GameState()
+        gs.lives = 1
+        gs.phase = GamePhase.PLAYER_DEAD
+        gs._phase_timer = 0.0
+        gs.update(C.DEATH_DISPLAY_TIME + 0.1)
+        assert gs.phase == GamePhase.GAME_OVER
+        assert gs.lives == 0
+
+    def test_game_over_update_does_nothing(self):
+        gs = GameState()
+        gs.phase = GamePhase.GAME_OVER
+        gs.score = 999
+        gs.update(10.0)  # large dt
+        assert gs.score == 999  # unchanged
+        assert gs.phase == GamePhase.GAME_OVER
+
+
+class TestLevelComplete:
+    def test_player_on_escape_ladder_at_row_0_completes_level(self):
+        """Player at col in escape_ladder_cols, row 0 → LEVEL_COMPLETE."""
+        gs = GameState()
+        gs.gold_remaining = 0  # all gold collected
+        gs.level.reveal_escape_ladder()
+        # Put player at top of escape ladder (col 0, row 0)
+        gs.player = Player(0, 0)
+        gs._check_level_complete()
+        assert gs.phase == GamePhase.LEVEL_COMPLETE
+
+    def test_level_complete_requires_zero_gold(self):
+        gs = GameState()
+        gs.gold_remaining = 1  # still gold left
+        gs.player = Player(0, 0)
+        gs._check_level_complete()
+        assert gs.phase == GamePhase.PLAYING  # not complete yet
+
+    def test_level_complete_awards_score_and_life(self):
+        gs = GameState()
+        gs.gold_remaining = 0
+        gs.level.reveal_escape_ladder()
+        gs.player = Player(0, 0)
+        initial_score = gs.score
+        initial_lives = gs.lives
+        gs._check_level_complete()
+        assert gs.score == initial_score + C.SCORE_LEVEL_COMPLETE
+        assert gs.lives == initial_lives + C.LIVES_PER_LEVEL
+
+    def test_level_complete_delay_loads_next_level(self):
+        gs = GameState()
+        gs.phase = GamePhase.LEVEL_COMPLETE
+        gs._phase_timer = 0.0
+        # Keep score from being reset (it persists across levels)
+        gs.score = 500
+        gs.update(C.LEVEL_COMPLETE_DELAY + 0.1)
+        assert gs.phase == GamePhase.PLAYING
+        assert gs.score == 500  # score persists across levels
