@@ -29,7 +29,7 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key in (C.KEY_PAUSE, pygame.K_q):
+                if event.key in (C.KEY_PAUSE,):
                     running = False
                 else:
                     player.handle_event(event)

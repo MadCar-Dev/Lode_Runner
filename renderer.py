@@ -8,6 +8,7 @@ import pygame
 
 import constants as C
 from level import Level
+from player import PlayerState
 
 if TYPE_CHECKING:
     from player import Player
@@ -126,8 +127,6 @@ class Renderer:
 
     def _draw_player(self, player: "Player") -> None:
         """Draw a stick-figure player sprite at the player's current pixel position."""
-        from player import PlayerState  # local import avoids circular
-
         px = int(player.x)
         py = int(player.y) + C.HUD_HEIGHT  # offset for HUD bar
         ts = C.TILE_SIZE
@@ -240,5 +239,5 @@ class Renderer:
     def _draw_hud(self) -> None:
         hud_rect = pygame.Rect(0, 0, C.WINDOW_WIDTH, C.HUD_HEIGHT)
         pygame.draw.rect(self._surface, C.COLOR_HUD_BG, hud_rect)
-        label = self._font.render("LODE RUNNER  |  Sprint 1 Foundation", True, C.COLOR_HUD_TEXT)
+        label = self._font.render("LODE RUNNER", True, C.COLOR_HUD_TEXT)
         self._surface.blit(label, (C.HUD_PADDING, C.HUD_PADDING))
