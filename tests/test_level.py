@@ -1,9 +1,5 @@
 """Unit tests for level.py — Level class."""
 
-import json
-import tempfile
-from pathlib import Path
-
 import pytest
 
 import constants as C
@@ -106,7 +102,6 @@ class TestLevelConstruction:
             "enemy_spawns": [],
             "escape_ladder_cols": [],
         }
-        original_grid_id = id(data["grid"][0])
         level = Level(data)
         level.set_tile(0, 0, C.GOLD)
         # Original data must not be mutated
