@@ -86,6 +86,7 @@ class TestPlayerEnemyCollision:
         gs._check_player_collision()
         assert gs.phase == GamePhase.PLAYER_DEAD
         assert not gs.player.is_alive
+        assert gs._phase_timer == 0.0
 
     def test_dead_enemy_does_not_kill_player(self):
         gs = GameState()
@@ -144,3 +145,47 @@ class TestEscapeLadderReveal:
         assert gs.gold_remaining == 0
         # Escape ladder revealed
         assert gs.level.get_tile(0, 0) == C.LADDER
+
+
+class TestEnemyScoring:
+    def test_enemy_trapped_awards_score(self):
+        """Score increases by SCORE_ENEMY_TRAPPED when enemy becomes TRAPPED."""
+        gs = GameState()
+        # Manufacture a transition: IDLE → TRAPPED
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.IDLE
+        gs.enemies = [enemy]
+        old_state = enemy.state
+        enemy.state = EnemyState.TRAPPED  # simulate transition
+        gs._check_enemy_score(old_state, enemy)
+        assert gs.score == C.SCORE_ENEMY_TRAPPED
+
+    def test_enemy_killed_awards_score(self):
+        """Score increases by SCORE_ENEMY_KILLED when TRAPPED enemy becomes DEAD."""
+        gs = GameState()
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.TRAPPED
+        old_state = enemy.state
+        enemy.state = EnemyState.DEAD  # simulate hole closing
+        gs._check_enemy_score(old_state, enemy)
+        assert gs.score == C.SCORE_ENEMY_KILLED
+
+    def test_non_trapped_to_dead_does_not_score(self):
+        """Enemies that die without being trapped (e.g. respawn) give no kill score."""
+        gs = GameState()
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.FALLING
+        old_state = enemy.state
+        enemy.state = EnemyState.DEAD
+        gs._check_enemy_score(old_state, enemy)
+        assert gs.score == 0  # no score for non-trap death
+
+    def test_enemy_respawn_does_not_score(self):
+        """Enemy going DEAD → FALLING (respawn) gives no score."""
+        gs = GameState()
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.DEAD
+        old_state = enemy.state
+        enemy.state = EnemyState.FALLING
+        gs._check_enemy_score(old_state, enemy)
+        assert gs.score == 0

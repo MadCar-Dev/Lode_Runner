@@ -60,7 +60,9 @@ class GameState:
             self.player.update(dt, self.level)
         self.level.update_holes(dt)
         for enemy in self.enemies:
+            old_state = enemy.state
             enemy.update(dt, self.level, self.player)
+            self._check_enemy_score(old_state, enemy)
         self._check_gold_pickup()
         self._check_player_collision()
         # Note: _check_level_complete is added in Task 5
@@ -113,3 +115,10 @@ class GameState:
                 self.phase = GamePhase.PLAYER_DEAD
                 self._phase_timer = 0.0
                 return
+
+    def _check_enemy_score(self, old_state: EnemyState, enemy: Enemy) -> None:
+        """Award points for enemy state transitions."""
+        if old_state != EnemyState.TRAPPED and enemy.state == EnemyState.TRAPPED:
+            self.score += C.SCORE_ENEMY_TRAPPED
+        elif old_state == EnemyState.TRAPPED and enemy.state == EnemyState.DEAD:
+            self.score += C.SCORE_ENEMY_KILLED
