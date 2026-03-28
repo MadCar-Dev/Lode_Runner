@@ -6,6 +6,7 @@ import pygame
 
 import constants as C
 from level import Level
+from player import Player
 from renderer import Renderer
 
 
@@ -17,12 +18,12 @@ def main() -> None:
     clock = pygame.time.Clock()
 
     level = Level.from_file("levels/level_01.json")
+    player = Player(level.player_spawn.col, level.player_spawn.row)
     renderer = Renderer(screen)
 
     running = True
     while running:
-        # Cap at 60fps; dt is elapsed seconds since last frame
-        _dt = clock.tick(C.FPS) / 1000.0
+        dt = clock.tick(C.FPS) / 1000.0
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -30,8 +31,13 @@ def main() -> None:
             elif event.type == pygame.KEYDOWN:
                 if event.key in (C.KEY_PAUSE, pygame.K_q):
                     running = False
+                else:
+                    player.handle_event(event)
 
-        renderer.draw(level)
+        if player.is_alive:
+            player.update(dt, level)
+
+        renderer.draw(level, player)
         pygame.display.flip()
 
     pygame.quit()

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pygame
 
 import constants as C
 from level import Level
+
+if TYPE_CHECKING:
+    from player import Player
 
 
 class Renderer:
@@ -22,10 +27,12 @@ class Renderer:
     # Public API
     # ------------------------------------------------------------------
 
-    def draw(self, level: Level) -> None:
-        """Draw the full frame: clear → tiles → HUD → blit to screen."""
+    def draw(self, level: Level, player: "Player | None" = None) -> None:
+        """Draw the full frame: clear → tiles → player → HUD → blit to screen."""
         self._surface.fill(C.COLOR_BACKGROUND)
         self._draw_tiles(level)
+        if player is not None:
+            self._draw_player(player)
         self._draw_hud()
         # Scale offscreen surface to actual screen size
         if self._screen.get_size() != (C.WINDOW_WIDTH, C.WINDOW_HEIGHT):
@@ -57,38 +64,37 @@ class Renderer:
             # FALSE_BRICK looks identical to DIGGABLE_BRICK — that's intentional
             pygame.draw.rect(self._surface, C.COLOR_DIGGABLE_BRICK, rect)
             # Top-left highlight edge
-            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_HIGHLIGHT,
-                             (x, y), (x + ts - 1, y))
-            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_HIGHLIGHT,
-                             (x, y), (x, y + ts - 1))
+            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_HIGHLIGHT, (x, y), (x + ts - 1, y))
+            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_HIGHLIGHT, (x, y), (x, y + ts - 1))
             # Bottom-right shadow edge
-            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_SHADOW,
-                             (x + ts - 1, y), (x + ts - 1, y + ts - 1))
-            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_SHADOW,
-                             (x, y + ts - 1), (x + ts - 1, y + ts - 1))
+            pygame.draw.line(
+                self._surface, C.COLOR_DIGGABLE_SHADOW, (x + ts - 1, y), (x + ts - 1, y + ts - 1)
+            )
+            pygame.draw.line(
+                self._surface, C.COLOR_DIGGABLE_SHADOW, (x, y + ts - 1), (x + ts - 1, y + ts - 1)
+            )
             # Mortar line (horizontal, centered)
-            pygame.draw.line(self._surface, C.COLOR_DIGGABLE_SHADOW,
-                             (x, y + ts // 2), (x + ts - 1, y + ts // 2))
+            pygame.draw.line(
+                self._surface, C.COLOR_DIGGABLE_SHADOW, (x, y + ts // 2), (x + ts - 1, y + ts // 2)
+            )
 
         elif tile_id == C.LADDER:
             # Two vertical rails + horizontal rungs
             rail_x1 = x + ts // 4
             rail_x2 = x + (ts * 3) // 4
-            pygame.draw.line(self._surface, C.COLOR_LADDER,
-                             (rail_x1, y), (rail_x1, y + ts - 1))
-            pygame.draw.line(self._surface, C.COLOR_LADDER,
-                             (rail_x2, y), (rail_x2, y + ts - 1))
+            pygame.draw.line(self._surface, C.COLOR_LADDER, (rail_x1, y), (rail_x1, y + ts - 1))
+            pygame.draw.line(self._surface, C.COLOR_LADDER, (rail_x2, y), (rail_x2, y + ts - 1))
             # Four rungs evenly spaced
             for i in range(C.LADDER_RUNG_COUNT):
                 rung_y = y + (ts * i) // 4 + ts // 8
-                pygame.draw.line(self._surface, C.COLOR_LADDER,
-                                 (rail_x1, rung_y), (rail_x2, rung_y))
+                pygame.draw.line(
+                    self._surface, C.COLOR_LADDER, (rail_x1, rung_y), (rail_x2, rung_y)
+                )
 
         elif tile_id == C.ROPE:
             # Horizontal line at 1/3 height + knots every 8px
             rope_y = y + ts // 3
-            pygame.draw.line(self._surface, C.COLOR_ROPE,
-                             (x, rope_y), (x + ts - 1, rope_y), 2)
+            pygame.draw.line(self._surface, C.COLOR_ROPE, (x, rope_y), (x + ts - 1, rope_y), 2)
             for kx in range(x + C.ROPE_KNOT_OFFSET, x + ts, C.ROPE_KNOT_SPACING):
                 pygame.draw.circle(self._surface, C.COLOR_ROPE, (kx, rope_y), 2)
 
@@ -99,8 +105,7 @@ class Renderer:
             points = [(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)]
             pygame.draw.polygon(self._surface, C.COLOR_GOLD, points)
             # Glint
-            pygame.draw.circle(self._surface, C.COLOR_GOLD_GLINT,
-                                (cx - r // 2, cy - r // 2), 2)
+            pygame.draw.circle(self._surface, C.COLOR_GOLD_GLINT, (cx - r // 2, cy - r // 2), 2)
 
         elif tile_id == C.HIDDEN_LADDER:
             pass  # Renders as empty space — invisible until revealed
@@ -112,12 +117,121 @@ class Renderer:
             # Partial brick closing in — drawn as two inward rectangles
             progress = 0.5  # Sprint 1: static midpoint; animated in Sprint 3
             fill_w = int(ts * progress * 0.5)
-            pygame.draw.rect(self._surface, C.COLOR_DIGGABLE_BRICK,
-                             pygame.Rect(x, y, fill_w, ts))
-            pygame.draw.rect(self._surface, C.COLOR_DIGGABLE_BRICK,
-                             pygame.Rect(x + ts - fill_w, y, fill_w, ts))
+            pygame.draw.rect(self._surface, C.COLOR_DIGGABLE_BRICK, pygame.Rect(x, y, fill_w, ts))
+            pygame.draw.rect(
+                self._surface, C.COLOR_DIGGABLE_BRICK, pygame.Rect(x + ts - fill_w, y, fill_w, ts)
+            )
 
         # EMPTY: draw nothing (background color already filled)
+
+    def _draw_player(self, player: "Player") -> None:
+        """Draw a stick-figure player sprite at the player's current pixel position."""
+        from player import PlayerState  # local import avoids circular
+
+        px = int(player.x)
+        py = int(player.y) + C.HUD_HEIGHT  # offset for HUD bar
+        ts = C.TILE_SIZE
+
+        # Head
+        head_cx = px + ts // 2
+        head_cy = py + ts // 5
+        pygame.draw.circle(self._surface, C.COLOR_PLAYER_OUTLINE, (head_cx, head_cy), ts // 6 + 1)
+        pygame.draw.circle(self._surface, C.COLOR_PLAYER_BODY, (head_cx, head_cy), ts // 6)
+
+        # Torso
+        torso_top = py + ts // 3
+        torso_bot = py + (ts * 2) // 3
+        pygame.draw.line(
+            self._surface, C.COLOR_PLAYER_BODY, (head_cx, torso_top), (head_cx, torso_bot), 2
+        )
+
+        # Arms — vary by state
+        state = player.state
+        arm_y = py + ts * 5 // 12
+        if state in (PlayerState.CLIMBING_UP, PlayerState.CLIMBING_DOWN):
+            # Arms up on rungs — alternate hands
+            arm_up = player.anim_frame % 2 == 0
+            left_hand_y = arm_y - (ts // 8 if arm_up else 0)
+            right_hand_y = arm_y - (0 if arm_up else ts // 8)
+            pygame.draw.line(
+                self._surface, C.COLOR_PLAYER_BODY, (head_cx, arm_y), (px + ts // 4, left_hand_y), 2
+            )
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, arm_y),
+                (px + (ts * 3) // 4, right_hand_y),
+                2,
+            )
+        elif state in (PlayerState.ROPE_LEFT, PlayerState.ROPE_RIGHT):
+            # Arms straight up gripping rope
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, arm_y),
+                (px + ts // 4, py + ts // 8),
+                2,
+            )
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, arm_y),
+                (px + (ts * 3) // 4, py + ts // 8),
+                2,
+            )
+        else:
+            # Running / idle: arms at sides, swing with anim_frame
+            swing = (ts // 8) * (1 if player.anim_frame % 2 == 0 else -1)
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, arm_y),
+                (px + ts // 4, arm_y + swing),
+                2,
+            )
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, arm_y),
+                (px + (ts * 3) // 4, arm_y - swing),
+                2,
+            )
+
+        # Legs — vary by state
+        leg_top = torso_bot
+        if state in (PlayerState.ROPE_LEFT, PlayerState.ROPE_RIGHT):
+            # Legs dangling
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, leg_top),
+                (px + ts // 3, py + ts - 2),
+                2,
+            )
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, leg_top),
+                (px + (ts * 2) // 3, py + ts - 2),
+                2,
+            )
+        else:
+            # Walking legs: alternate based on anim_frame
+            step = (ts // 5) * (1 if player.anim_frame % 2 == 0 else -1)
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, leg_top),
+                (px + ts // 2 - step, py + ts - 2),
+                2,
+            )
+            pygame.draw.line(
+                self._surface,
+                C.COLOR_PLAYER_BODY,
+                (head_cx, leg_top),
+                (px + ts // 2 + step, py + ts - 2),
+                2,
+            )
 
     # ------------------------------------------------------------------
     # HUD
@@ -126,6 +240,5 @@ class Renderer:
     def _draw_hud(self) -> None:
         hud_rect = pygame.Rect(0, 0, C.WINDOW_WIDTH, C.HUD_HEIGHT)
         pygame.draw.rect(self._surface, C.COLOR_HUD_BG, hud_rect)
-        label = self._font.render("LODE RUNNER  |  Sprint 1 Foundation", True,
-                                  C.COLOR_HUD_TEXT)
+        label = self._font.render("LODE RUNNER  |  Sprint 1 Foundation", True, C.COLOR_HUD_TEXT)
         self._surface.blit(label, (C.HUD_PADDING, C.HUD_PADDING))
