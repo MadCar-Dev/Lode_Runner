@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import constants as C
 from enemy import Enemy, EnemyState
 from level import Level
 from player import Player
+
+if TYPE_CHECKING:
+    from sound_manager import SoundManager
 
 
 class GamePhase(Enum):
@@ -73,29 +77,38 @@ class GameState:
         if self.phase == GamePhase.PLAYING:
             self.player.handle_event(event)  # type: ignore[arg-type]
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, sound_manager: "SoundManager | None" = None) -> None:
         """Advance game state by dt seconds."""
         if self.phase == GamePhase.PLAYING:
-            self._update_playing(dt)
+            self._update_playing(dt, sound_manager)
         elif self.phase == GamePhase.PLAYER_DEAD:
-            self._update_player_dead(dt)
+            self._update_player_dead(dt, sound_manager)
         elif self.phase == GamePhase.LEVEL_COMPLETE:
-            self._update_level_complete(dt)
+            self._update_level_complete(dt, sound_manager)
         # TITLE, PAUSED, GAME_OVER: no per-frame updates
 
-    def _update_playing(self, dt: float) -> None:
+    def _update_playing(self, dt: float, sm: "SoundManager | None" = None) -> None:
+        hole_count_before = len(self.level._holes)
         if self.player.is_alive:
             self.player.update(dt, self.level)
         self.level.update_holes(dt)
+        hole_count_after = len(self.level._holes)
+
+        if sm and hole_count_after > hole_count_before:
+            sm.play_event("dig")
+
         for enemy in self.enemies:
             old_state = enemy.state
             enemy.update(dt, self.level, self.player)
-            self._check_enemy_score(old_state, enemy)
-        self._check_gold_pickup()
-        self._check_player_collision()
-        self._check_level_complete()
+            self._check_enemy_score(old_state, enemy, sm)
+        self._check_gold_pickup(sm)
+        self._check_player_collision(sm)
+        self._check_level_complete(sm)
 
-    def _update_player_dead(self, dt: float) -> None:
+        if sm:
+            sm.play_bgm("bgm_game")
+
+    def _update_player_dead(self, dt: float, sm: "SoundManager | None" = None) -> None:
         self.level.update_holes(dt)
         for enemy in self.enemies:
             enemy.update(dt, self.level, self.player)
@@ -106,12 +119,15 @@ class GameState:
                 self.lives = 0
                 self.phase = GamePhase.GAME_OVER
                 self._phase_timer = 0.0
+                if sm:
+                    sm.play_event("game_over")
+                    sm.play_bgm("bgm_game_over")
             else:
                 self._load_level()
                 self.phase = GamePhase.PLAYING
                 self._phase_timer = 0.0
 
-    def _update_level_complete(self, dt: float) -> None:
+    def _update_level_complete(self, dt: float, sm: "SoundManager | None" = None) -> None:
         self._phase_timer += dt
         if self._phase_timer >= C.LEVEL_COMPLETE_DELAY:
             self.level_number += 1
@@ -119,7 +135,7 @@ class GameState:
             self.phase = GamePhase.PLAYING
             self._phase_timer = 0.0
 
-    def _check_gold_pickup(self) -> None:
+    def _check_gold_pickup(self, sm: "SoundManager | None" = None) -> None:
         """Collect gold if player occupies a GOLD tile."""
         if not self.player.is_alive:
             return
@@ -130,12 +146,16 @@ class GameState:
             self._pending_effects.append(
                 {"type": "gold_collected", "col": self.player.col, "row": self.player.row}
             )
+            if sm:
+                sm.play_event("gold_pickup")
             if self.gold_remaining <= 0:
                 self.gold_remaining = 0
                 self.level.reveal_escape_ladder()
                 self._pending_effects.append({"type": "ladder_reveal"})
+                if sm:
+                    sm.play_event("ladder_reveal")
 
-    def _check_player_collision(self) -> None:
+    def _check_player_collision(self, sm: "SoundManager | None" = None) -> None:
         """Kill player if any live enemy occupies the same tile."""
         if not self.player.is_alive:
             return
@@ -147,16 +167,24 @@ class GameState:
                 self.phase = GamePhase.PLAYER_DEAD
                 self._phase_timer = 0.0
                 self._pending_effects.append({"type": "player_death"})
+                if sm:
+                    sm.play_event("player_death")
                 return
 
-    def _check_enemy_score(self, old_state: EnemyState, enemy: Enemy) -> None:
+    def _check_enemy_score(
+        self, old_state: EnemyState, enemy: Enemy, sm: "SoundManager | None" = None
+    ) -> None:
         """Award points for enemy state transitions."""
         if old_state != EnemyState.TRAPPED and enemy.state == EnemyState.TRAPPED:
             self.score += C.SCORE_ENEMY_TRAPPED
+            if sm:
+                sm.play_event("enemy_trap")
         elif old_state == EnemyState.TRAPPED and enemy.state == EnemyState.DEAD:
             self.score += C.SCORE_ENEMY_KILLED
+            if sm:
+                sm.play_event("enemy_death")
 
-    def _check_level_complete(self) -> None:
+    def _check_level_complete(self, sm: "SoundManager | None" = None) -> None:
         """Detect when player reaches the escape ladder at the top of the level."""
         if self.gold_remaining > 0:
             return
@@ -168,3 +196,6 @@ class GameState:
             self.phase = GamePhase.LEVEL_COMPLETE
             self._phase_timer = 0.0
             self._pending_effects.append({"type": "level_complete"})
+            if sm:
+                sm.play_event("level_complete")
+                sm.play_bgm("bgm_level_complete")

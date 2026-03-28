@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pygame
 
 import constants as C
@@ -351,3 +353,114 @@ class TestTitleAndPausedPhases:
         gs._check_level_complete()
         effects = gs.drain_effects()
         assert any(e["type"] == "level_complete" for e in effects)
+
+
+def _make_mock_sound_manager() -> MagicMock:
+    """Create a mock SoundManager with play_event and play_bgm."""
+    sm = MagicMock()
+    sm.play_event = MagicMock()
+    sm.play_bgm = MagicMock()
+    sm.stop_bgm = MagicMock()
+    sm.enabled = True
+    return sm
+
+
+class TestSoundEvents:
+    def test_gold_pickup_fires_sound(self):
+        patch = {
+            (5, 13): C.GOLD,
+            **{(c, 14): C.SOLID_BRICK for c in range(C.GRID_COLS)},
+        }
+        gs = _make_game_with_patch(patch)
+        gs.player = Player(5, 13)
+        sm = _make_mock_sound_manager()
+        gs._check_gold_pickup(sm)
+        sm.play_event.assert_any_call("gold_pickup")
+
+    def test_ladder_reveal_fires_sound(self):
+        patch = {
+            (5, 13): C.GOLD,
+            (0, 0): C.HIDDEN_LADDER,
+            **{(c, 14): C.SOLID_BRICK for c in range(C.GRID_COLS)},
+        }
+        gs = _make_game_with_patch(patch)
+        gs.player = Player(5, 13)
+        sm = _make_mock_sound_manager()
+        gs._check_gold_pickup(sm)
+        sm.play_event.assert_any_call("ladder_reveal")
+
+    def test_enemy_trap_fires_sound(self):
+        gs = GameState()
+        enemy = Enemy(5, 5)
+        old_state = EnemyState.IDLE
+        enemy.state = EnemyState.TRAPPED
+        sm = _make_mock_sound_manager()
+        gs._check_enemy_score(old_state, enemy, sm)
+        sm.play_event.assert_any_call("enemy_trap")
+
+    def test_enemy_death_fires_sound(self):
+        gs = GameState()
+        enemy = Enemy(5, 5)
+        old_state = EnemyState.TRAPPED
+        enemy.state = EnemyState.DEAD
+        sm = _make_mock_sound_manager()
+        gs._check_enemy_score(old_state, enemy, sm)
+        sm.play_event.assert_any_call("enemy_death")
+
+    def test_player_death_fires_sound(self):
+        gs = GameState()
+        gs.player = Player(5, 5)
+        enemy = Enemy(5, 5)
+        enemy.state = EnemyState.RUNNING_RIGHT
+        gs.enemies = [enemy]
+        sm = _make_mock_sound_manager()
+        gs._check_player_collision(sm)
+        sm.play_event.assert_any_call("player_death")
+
+    def test_level_complete_fires_sound(self):
+        gs = GameState()
+        gs.gold_remaining = 0
+        gs.level.reveal_escape_ladder()
+        gs.player = Player(0, 0)
+        sm = _make_mock_sound_manager()
+        gs._check_level_complete(sm)
+        sm.play_event.assert_any_call("level_complete")
+
+    def test_game_over_fires_sound(self):
+        gs = GameState()
+        gs.lives = 1
+        gs.phase = GamePhase.PLAYER_DEAD
+        gs._phase_timer = 0.0
+        sm = _make_mock_sound_manager()
+        gs.update(C.DEATH_DISPLAY_TIME + 0.1, sm)
+        sm.play_event.assert_any_call("game_over")
+
+    def test_update_without_sound_manager_still_works(self):
+        """Existing code path with no sound_manager must not break."""
+        gs = GameState()
+        gs.update(0.016)  # no sound_manager — must not raise
+
+    def test_bgm_game_plays_during_playing(self):
+        gs = GameState()
+        gs.phase = GamePhase.PLAYING
+        sm = _make_mock_sound_manager()
+        gs.update(0.016, sm)
+        sm.play_bgm.assert_any_call("bgm_game")
+
+    def test_bgm_level_complete_on_phase(self):
+        gs = GameState()
+        gs.gold_remaining = 0
+        gs.level.reveal_escape_ladder()
+        gs.player = Player(0, 0)
+        sm = _make_mock_sound_manager()
+        gs._check_level_complete(sm)
+        sm.play_bgm.assert_any_call("bgm_level_complete")
+
+    def test_bgm_game_over_on_phase(self):
+        gs = GameState()
+        gs.lives = 1
+        gs.phase = GamePhase.PLAYER_DEAD
+        gs._phase_timer = 0.0
+        sm = _make_mock_sound_manager()
+        gs.update(C.DEATH_DISPLAY_TIME + 0.1, sm)
+        sm.play_bgm.assert_any_call("bgm_game_over")
