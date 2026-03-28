@@ -67,6 +67,8 @@ HOLE_OPEN_DURATION = 7.0  # seconds before hole starts filling
 HOLE_FILL_DURATION = 3.0  # seconds for fill animation (total life = 10s)
 ENEMY_ESCAPE_TIME = 2.5  # seconds before trapped enemy climbs out
 ENEMY_RESPAWN_DELAY = 3.0  # seconds after death before enemy respawns at spawn point
+DEATH_DISPLAY_TIME = 2.0  # seconds to show death before restarting
+LEVEL_COMPLETE_DELAY = 1.5  # seconds to pause before loading next level
 
 # ---------------------------------------------------------------------------
 # Movement speeds (tiles per second)

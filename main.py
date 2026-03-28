@@ -5,9 +5,7 @@ import sys
 import pygame
 
 import constants as C
-from enemy import Enemy
-from level import Level
-from player import Player
+from game import GamePhase, GameState
 from renderer import Renderer
 
 
@@ -18,9 +16,7 @@ def main() -> None:
     screen = pygame.display.set_mode((C.WINDOW_WIDTH, C.WINDOW_HEIGHT))
     clock = pygame.time.Clock()
 
-    level = Level.from_file("levels/level_01.json")
-    player = Player(level.player_spawn.col, level.player_spawn.row)
-    enemies = [Enemy(sp.col, sp.row) for sp in level.enemy_spawns]
+    game = GameState()
     renderer = Renderer(screen)
 
     running = True
@@ -31,22 +27,17 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                if event.key in (C.KEY_PAUSE,):
+                if event.key == C.KEY_PAUSE:
                     running = False
                 else:
-                    player.handle_event(event)
+                    game.handle_event(event)
 
-        if player.is_alive:
-            player.update(dt, level)
+        game.update(dt)
 
-        # Holes and enemies update regardless of player state — intentional:
-        # holes should keep filling and enemies keep moving while player is dead.
-        level.update_holes(dt)
+        if game.phase == GamePhase.GAME_OVER:
+            running = False  # Sprint 6 will add the game-over screen
 
-        for enemy in enemies:
-            enemy.update(dt, level, player)
-
-        renderer.draw(level, player, enemies)
+        renderer.draw(game.level, game.player, game.enemies)
         pygame.display.flip()
 
     pygame.quit()
