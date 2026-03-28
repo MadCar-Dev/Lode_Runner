@@ -298,3 +298,10 @@ class TestEnemyGold:
         # One gold should still be on the ground (the one not picked up)
         remaining = level.gold_positions()
         assert len(remaining) >= 1
+
+
+class TestCarryingGold:
+    def test_enemy_has_carrying_gold_attr(self):
+        e = Enemy(5, 5)
+        assert hasattr(e, "carrying_gold")
+        assert e.carrying_gold is False

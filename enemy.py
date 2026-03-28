@@ -35,6 +35,7 @@ class Enemy:
         self._spawn_col: int = col
         self._spawn_row: int = row
         self.has_gold: bool = False
+        self.carrying_gold: bool = False  # set by game.py when enemy picks up gold
         self._trap_timer: float = 0.0
         self._respawn_timer: float = 0.0
         self.anim_frame: int = 0
