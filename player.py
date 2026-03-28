@@ -32,6 +32,7 @@ class Player:
         self._v_dir: int = 0
         self.anim_frame: int = 0
         self._anim_timer: float = 0.0
+        self._dig_request: int = 0  # -1 = dig left, +1 = dig right, 0 = none
 
     @property
     def col(self) -> int:
@@ -62,11 +63,16 @@ class Player:
             self._v_dir = -1 if self._v_dir != -1 else 0
         elif key in (C.KEY_DOWN, C.KEY_ALT_DOWN):
             self._v_dir = 1 if self._v_dir != 1 else 0
+        elif key in (C.KEY_DIG_LEFT, C.KEY_ALT_DIG_LEFT):
+            self._dig_request = -1
+        elif key in (C.KEY_DIG_RIGHT, C.KEY_ALT_DIG_RIGHT):
+            self._dig_request = 1
 
     def update(self, dt: float, level: Level) -> None:
         """Advance player physics and state for one frame."""
         if self.state == PlayerState.DEAD:
             return
+        self._try_dig(level)  # process dig before movement
         on_rope = self._is_on_rope(level)
         on_ladder = self._is_on_ladder(level)
         on_floor = self._is_on_floor(level)
@@ -220,3 +226,27 @@ class Player:
         if self._anim_timer >= 1.0 / C.PLAYER_ANIM_FPS:
             self._anim_timer -= 1.0 / C.PLAYER_ANIM_FPS
             self.anim_frame = (self.anim_frame + 1) % C.PLAYER_ANIM_FRAMES
+
+    def _try_dig(self, level: Level) -> None:
+        """Execute a pending dig request if conditions allow.
+
+        Dig target is the tile one row below and one col to the side
+        of the player (left or right, based on _dig_request).
+        Cannot dig while: on a rope, falling, or dead.
+        """
+        if self._dig_request == 0:
+            return
+        direction = self._dig_request
+        self._dig_request = 0  # consume the request (one-shot)
+
+        # Cannot dig in these states
+        if self.state in (PlayerState.FALLING, PlayerState.DEAD):
+            return
+        if self.state in (PlayerState.ROPE_LEFT, PlayerState.ROPE_RIGHT):
+            return
+        if self._is_on_rope(level):
+            return
+
+        target_col = self.col + direction
+        target_row = self.row + 1
+        level.dig_hole(target_col, target_row)

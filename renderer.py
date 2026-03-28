@@ -52,9 +52,17 @@ class Renderer:
                 tile = level.get_tile(col, row)
                 x = col * C.TILE_SIZE
                 y = row * C.TILE_SIZE + C.HUD_HEIGHT
-                self._draw_tile(tile, x, y)
+                self._draw_tile(tile, x, y, level, col, row)
 
-    def _draw_tile(self, tile_id: int, x: int, y: int) -> None:
+    def _draw_tile(
+        self,
+        tile_id: int,
+        x: int,
+        y: int,
+        level: Level | None = None,
+        col: int = 0,
+        row: int = 0,
+    ) -> None:
         ts = C.TILE_SIZE
         rect = pygame.Rect(x, y, ts, ts)
 
@@ -115,12 +123,14 @@ class Renderer:
             pass  # Void — background shows through
 
         elif tile_id == C.HOLE_FILLING:
-            # Partial brick closing in — drawn as two inward rectangles
-            progress = 0.5  # Sprint 1: static midpoint; animated in Sprint 3
+            # Partial brick closing in from both sides
+            progress = level.get_hole_progress(col, row) if level else 0.5
             fill_w = int(ts * progress * 0.5)
             pygame.draw.rect(self._surface, C.COLOR_DIGGABLE_BRICK, pygame.Rect(x, y, fill_w, ts))
             pygame.draw.rect(
-                self._surface, C.COLOR_DIGGABLE_BRICK, pygame.Rect(x + ts - fill_w, y, fill_w, ts)
+                self._surface,
+                C.COLOR_DIGGABLE_BRICK,
+                pygame.Rect(x + ts - fill_w, y, fill_w, ts),
             )
 
         # EMPTY: draw nothing (background color already filled)
