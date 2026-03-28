@@ -39,6 +39,8 @@ def main() -> None:
         if player.is_alive:
             player.update(dt, level)
 
+        # Holes and enemies update regardless of player state — intentional:
+        # holes should keep filling and enemies keep moving while player is dead.
         level.update_holes(dt)
 
         for enemy in enemies:

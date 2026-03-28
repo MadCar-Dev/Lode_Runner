@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pygame
 
 import constants as C
+from enemy import EnemyState
 from level import Level
 from player import PlayerState
 
@@ -252,8 +253,6 @@ class Renderer:
 
     def _draw_enemies(self, enemies: "list[Enemy]") -> None:
         """Draw all enemy stick figures."""
-        from enemy import EnemyState
-
         for enemy in enemies:
             if enemy.state == EnemyState.DEAD:
                 continue  # dead enemies are invisible
@@ -261,8 +260,6 @@ class Renderer:
 
     def _draw_enemy(self, enemy: "Enemy") -> None:
         """Draw a single enemy stick figure — same structure as player but red."""
-        from enemy import EnemyState
-
         px = int(enemy.x)
         py = int(enemy.y) + C.HUD_HEIGHT
         ts = C.TILE_SIZE
