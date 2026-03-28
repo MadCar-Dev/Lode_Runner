@@ -6,7 +6,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 import constants as C
-from enemy import Enemy
+from enemy import Enemy, EnemyState
 from level import Level
 from player import Player
 
@@ -61,6 +61,9 @@ class GameState:
         self.level.update_holes(dt)
         for enemy in self.enemies:
             enemy.update(dt, self.level, self.player)
+        self._check_gold_pickup()
+        self._check_player_collision()
+        # Note: _check_level_complete is added in Task 5
 
     def _update_player_dead(self, dt: float) -> None:
         self.level.update_holes(dt)
@@ -85,3 +88,28 @@ class GameState:
             self._load_level()
             self.phase = GamePhase.PLAYING
             self._phase_timer = 0.0
+
+    def _check_gold_pickup(self) -> None:
+        """Collect gold if player occupies a GOLD tile."""
+        if not self.player.is_alive:
+            return
+        if self.level.get_tile(self.player.col, self.player.row) == C.GOLD:
+            self.level.set_tile(self.player.col, self.player.row, C.EMPTY)
+            self.score += C.SCORE_GOLD
+            self.gold_remaining -= 1
+            if self.gold_remaining <= 0:
+                self.gold_remaining = 0
+                self.level.reveal_escape_ladder()
+
+    def _check_player_collision(self) -> None:
+        """Kill player if any live enemy occupies the same tile."""
+        if not self.player.is_alive:
+            return
+        for enemy in self.enemies:
+            if enemy.state in (EnemyState.DEAD, EnemyState.TRAPPED):
+                continue
+            if enemy.col == self.player.col and enemy.row == self.player.row:
+                self.player.kill()
+                self.phase = GamePhase.PLAYER_DEAD
+                self._phase_timer = 0.0
+                return
