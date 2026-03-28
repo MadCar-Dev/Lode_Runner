@@ -60,6 +60,14 @@ COLOR_HUD_BG = (10, 10, 20)
 COLOR_HUD_TEXT = (245, 197, 66)
 COLOR_HUD_TEXT_DIM = (106, 96, 64)
 
+# Sprint 6 UI screen colors
+COLOR_LIGHT_BLUE = (168, 212, 255)     # #A8D4FF — subtitle, "NEW HIGH SCORE!"
+COLOR_MENU_INACTIVE = (128, 128, 128)  # #808080 — non-highlighted menu items
+COLOR_DROP_SHADOW = (217, 64, 64)      # #D94040 — logo drop shadow / "GAME OVER" red
+COLOR_DARK_RED = (139, 26, 26)         # #8B1A1A — game over drop shadow
+COLOR_PANEL_BG = (10, 10, 20)          # #0A0A14 — score panel background (same as HUD_BG)
+COLOR_PANEL_BORDER = (245, 197, 66)    # #F5C542 — score panel border (same as COLOR_GOLD)
+
 # ---------------------------------------------------------------------------
 # Timing (seconds)
 # ---------------------------------------------------------------------------
