@@ -35,9 +35,9 @@ def main() -> None:
         game.update(dt)
 
         if game.phase == GamePhase.GAME_OVER:
-            running = False  # Sprint 6 will add the game-over screen
+            running = False  # Sprint 6 will add the interactive game-over screen
 
-        renderer.draw(game.level, game.player, game.enemies)
+        renderer.draw(game)
         pygame.display.flip()
 
     pygame.quit()

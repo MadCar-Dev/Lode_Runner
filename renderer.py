@@ -13,6 +13,7 @@ from player import PlayerState
 
 if TYPE_CHECKING:
     from enemy import Enemy
+    from game import GameState
     from player import Player
 
 
@@ -30,21 +31,14 @@ class Renderer:
     # Public API
     # ------------------------------------------------------------------
 
-    def draw(
-        self,
-        level: Level,
-        player: "Player | None" = None,
-        enemies: "list[Enemy] | None" = None,
-    ) -> None:
-        """Draw the full frame: clear -> tiles -> enemies -> player -> HUD -> blit to screen."""
+    def draw(self, game: "GameState") -> None:
+        """Draw the full frame: clear -> tiles -> enemies -> player -> HUD -> overlay -> blit."""
         self._surface.fill(C.COLOR_BACKGROUND)
-        self._draw_tiles(level)
-        if enemies is not None:
-            self._draw_enemies(enemies)
-        if player is not None:
-            self._draw_player(player)
-        self._draw_hud()
-        # Scale offscreen surface to actual screen size
+        self._draw_tiles(game.level)
+        self._draw_enemies(game.enemies)
+        self._draw_player(game.player)
+        self._draw_hud(game)
+        self._draw_phase_overlay(game)
         if self._screen.get_size() != (C.WINDOW_WIDTH, C.WINDOW_HEIGHT):
             scaled = pygame.transform.scale(self._surface, self._screen.get_size())
             self._screen.blit(scaled, (0, 0))
@@ -334,8 +328,34 @@ class Renderer:
     # HUD
     # ------------------------------------------------------------------
 
-    def _draw_hud(self) -> None:
+    def _draw_hud(self, game: "GameState") -> None:
         hud_rect = pygame.Rect(0, 0, C.WINDOW_WIDTH, C.HUD_HEIGHT)
         pygame.draw.rect(self._surface, C.COLOR_HUD_BG, hud_rect)
-        label = self._font.render("LODE RUNNER", True, C.COLOR_HUD_TEXT)
+        score_text = f"SCORE {game.score:07d}"
+        lives_text = f"LIVES {game.lives}"
+        gold_text = f"GOLD {game.gold_remaining:02d}"
+        level_text = f"LVL {game.level_number:03d}"
+        label = self._font.render(
+            f"{score_text}   {lives_text}   {gold_text}   {level_text}",
+            True,
+            C.COLOR_HUD_TEXT,
+        )
         self._surface.blit(label, (C.HUD_PADDING, C.HUD_PADDING))
+
+    def _draw_phase_overlay(self, game: "GameState") -> None:
+        """Draw centered overlay text for LEVEL_COMPLETE and GAME_OVER phases."""
+        from game import GamePhase  # noqa: PLC0415
+
+        if game.phase == GamePhase.LEVEL_COMPLETE:
+            msg = "LEVEL COMPLETE"
+            color = C.COLOR_GOLD
+        elif game.phase == GamePhase.GAME_OVER:
+            msg = f"GAME OVER   SCORE {game.score:07d}"
+            color = C.COLOR_ENEMY_BODY
+        else:
+            return
+        big_font = pygame.font.SysFont("monospace", C.HUD_FONT_SIZE * 2)
+        label = big_font.render(msg, True, color)
+        cx = (C.WINDOW_WIDTH - label.get_width()) // 2
+        cy = (C.WINDOW_HEIGHT - label.get_height()) // 2
+        self._surface.blit(label, (cx, cy))
